@@ -12,8 +12,8 @@ module thinpad_top(
     output wire[15:0] leds,       //16位LED，输出时1点亮
     output wire[7:0]  dpy0,       //数码管低位信号，包括小数点，输出1点亮
     output wire[7:0]  dpy1,       //数码管高位信号，包括小数点，输出1点亮
-
-    //BaseRAM信号
+    
+    //BaseRAM信号//这个里面放的是指令
     inout wire[31:0] base_ram_data,  //BaseRAM数据，低8位与CPLD串口控制器共享
     output wire[19:0] base_ram_addr, //BaseRAM地址
     output wire[3:0] base_ram_be_n,  //BaseRAM字节使能，低有效。如果不使用字节使能，请保持为0
@@ -70,6 +70,8 @@ pll_example clock_gen
                      // 后级电路复位信号应当由它生成（见下）
  );
 
+
+
 reg reset_of_clk10M;
 // 异步复位，同步释放，将locked信号转为后级电路的复位reset_of_clk10M
 always@(posedge clk_10M or negedge locked) begin
@@ -77,6 +79,21 @@ always@(posedge clk_10M or negedge locked) begin
     else        reset_of_clk10M <= 1'b0;
 end
 
+
+
+//没有进行片选前的我自己的top出来的wire类型
+wire inst_sram_en_my;
+wire [3:0] inst_sram_wen_my;
+wire [31:0] inst_sram_addr_my;
+wire [31:0] inst_sram_wdata_my;
+wire [31:0] inst_sram_rdata_my;
+  
+wire data_sram_en_my;
+wire [3:0] data_sram_wen_my;
+wire [31:0] data_sram_addr_my;
+wire [31:0] data_sram_wdata_my;
+wire [31:0] data_sram_rdata_my;
+/*
 always@(posedge clk_10M or posedge reset_of_clk10M) begin
     if(reset_of_clk10M)begin
         // Your Code
@@ -85,9 +102,166 @@ always@(posedge clk_10M or posedge reset_of_clk10M) begin
         // Your Code
     end
 end
+*/
+reg  [19:0]base_ram_addr_r;
+reg  [3:0]base_ram_be_n_r;
+reg  base_ram_ce_n_r;
+reg  base_ram_oe_n_r;
+reg  base_ram_we_n_r;
+reg  [31:0]base_ram_data_r;
+
+reg  [19:0]ext_ram_addr_r;
+reg  [3:0]ext_ram_be_n_r;
+reg  ext_ram_ce_n_r;
+reg  ext_ram_oe_n_r;
+reg  ext_ram_we_n_r;
+reg  [31:0]ext_ram_data_r;
+//RAM->REG
+reg [31:0]inst_rdata_r;
+reg [31:0]data_rdata_r;
+//reg ext_ram_we_n_r;
+
+reg sel_sram;
+//  reg from_ex;
+
+top cpu(
+    .clk_in(clk_20M),
+    .rsten(reset_of_clk10M),
+
+    .inst_sram_en(inst_sram_en_my),
+    .inst_sram_wen(inst_sram_wen_my),
+    .inst_sram_addr(inst_sram_addr_my),
+    .inst_sram_wdata(inst_sram_wdata_my),
+    .inst_sram_rdata(inst_sram_rdata_my),
+  
+    .data_sram_en(data_sram_en_my),
+    .data_sram_wen(data_sram_wen_my),
+    .data_sram_addr(data_sram_addr_my),
+    .data_sram_wdata(data_sram_wdata_my),
+    .data_sram_rdata(data_sram_rdata_my)
+);
+//进行对应片选和真正在芯片上地址对应
+
+
+always @(*) begin
+    if(reset_of_clk10M)begin
+            inst_rdata_r <= 32'b0;
+            data_rdata_r <= 32'b0;
+    end
+    else begin          //1:0
+        inst_rdata_r <= sel_sram ? base_ram_data : 32'b0; 
+        data_rdata_r <= sel_sram ? ( ~ext_ram_oe_n_r ? ext_ram_data : 32'b0 ) : (~base_ram_oe_n_r ? base_ram_data : 32'b0);
+       //这还是在从ROM中读取数据             读使能                                   读使能
+       //相当于是sel为1时选择extrom做dataRom
+                                      //   读                                       读
+    end
+end
+assign inst_sram_rdata_my = inst_rdata_r;
+assign data_sram_rdata_my = data_rdata_r;
+//REG->RAM  
+assign base_ram_data = ~base_ram_we_n_r ? base_ram_data_r : 32'bz;
+assign ext_ram_data = ~ext_ram_we_n_r ? ext_ram_data_r : 32'bz;
+                      //is 0 -> 1
+
+always @(posedge clk_20M)begin
+    if(reset_of_clk10M)begin
+        base_ram_addr_r <= 20'b0;
+        base_ram_be_n_r <= 4'b0;
+        base_ram_ce_n_r <= 1'b1;
+        base_ram_oe_n_r <= 1'b1;
+        base_ram_we_n_r <= 1'b1;
+        base_ram_data_r <= 32'b0;
+
+        ext_ram_addr_r <= 20'b0;
+        ext_ram_be_n_r <= 4'b0;
+        ext_ram_ce_n_r <= 1'b1;
+        ext_ram_oe_n_r <= 1'b1;
+        ext_ram_we_n_r <= 1'b1;
+        ext_ram_data_r <= 32'b0;
+
+        sel_sram <= 1'b1;
+    end
+    //开始对data的地址进行仲裁
+    else begin
+        if(data_sram_en_my &&  data_sram_addr_my >= 32'h0 && data_sram_addr_my <32'h00400000)begin
+            //data用baseram
+            //让baseram使能
+            base_ram_addr_r <= data_sram_addr_my[21:2];
+            base_ram_be_n_r <= 4'b0;
+            base_ram_ce_n_r <= 1'b0;
+            base_ram_oe_n_r <= data_sram_wen_my;
+            base_ram_we_n_r <= ~data_sram_wen_my;
+            base_ram_data_r <= data_sram_wdata_my;
+            //1无效
+            ext_ram_addr_r <= 20'b0;
+            ext_ram_be_n_r <= 4'b0;
+            ext_ram_ce_n_r <= 1'b1;
+            ext_ram_oe_n_r <= 1'b1;
+            ext_ram_we_n_r <= 1'b1;
+            ext_ram_data_r <= 32'b0;
+
+            sel_sram <= 1'b0;
+            //from_ex <= 1'b1;
+            
+        end
+
+        else if(data_sram_en_my && data_sram_addr_my >= 32'h00400000)begin
+            //data使用extram(也就是他本身的)
+            //让extram使能
+            ext_ram_addr_r <= data_sram_addr_my[21:2];
+            ext_ram_be_n_r <= 4'b0;
+            ext_ram_ce_n_r <= 1'b0;
+            ext_ram_oe_n_r <= data_sram_wen_my;
+            ext_ram_we_n_r <= ~data_sram_wen_my; //if 1 -> 0
+            ext_ram_data_r <= data_sram_wdata_my;
+    
+            base_ram_addr_r <= inst_sram_addr_my[21:2];
+            base_ram_be_n_r <= 4'b0;
+            base_ram_ce_n_r <= 1'b0;
+            base_ram_oe_n_r <= 1'b0;//读
+            base_ram_we_n_r <= 1'b1;
+            //from_ex <= 1'b0;
+
+            sel_sram <= 1'b1;
+        end else begin
+            ext_ram_addr_r <= 20'bZ;//在这将ext的addr赋值成Z
+            ext_ram_be_n_r <= 4'b0;
+            ext_ram_ce_n_r <= 1'b1;
+            ext_ram_oe_n_r <= 1'b1;
+            ext_ram_we_n_r <= 1'b1;
+            ext_ram_data_r <= data_sram_wdata_my;
+            /////////////用写使能判断选哪个数据（1读的/0写的）
+            //上面的想法错了，应该对于这个应该是只有写方面的
+    
+            base_ram_addr_r <= inst_sram_addr_my[21:2];
+            base_ram_be_n_r <= 4'b0;
+            base_ram_ce_n_r <= 1'b0;
+            base_ram_oe_n_r <= 1'b0;//读
+            base_ram_we_n_r <= 1'b1;
+            //base_ram_data_r <= 32'b0;
+            sel_sram <= 1'b1;
+            //from_ex <= 1'b0;
+        end
+    end  
+end
+
+//这个才是真正的;
+assign base_ram_addr = base_ram_addr_r;
+assign base_ram_be_n = base_ram_be_n_r;
+assign base_ram_ce_n = base_ram_ce_n_r;
+assign base_ram_oe_n = base_ram_oe_n_r;
+assign base_ram_we_n = base_ram_we_n_r;
+
+
+assign ext_ram_addr = ext_ram_addr_r;
+assign ext_ram_be_n = ext_ram_be_n_r;
+assign ext_ram_ce_n = ext_ram_ce_n_r;
+assign ext_ram_oe_n = ext_ram_oe_n_r;
+assign ext_ram_we_n = ext_ram_we_n_r;
 
 // 不使用内存、串口时，禁用其使能信号
-assign base_ram_ce_n = 1'b1;
+//之前被下面这个东西坑了
+/*assign base_ram_ce_n = 1'b1;
 assign base_ram_oe_n = 1'b1;
 assign base_ram_we_n = 1'b1;
 
@@ -106,23 +280,11 @@ assign ext_ram_we_n = 1'b1;
 // g=dpy0[7] // |     |
 //           // ---d---  p
 
-// 7段数码管译码器演示，将number用16进制显示在数码管上面
-wire[7:0] number;
+/*/
+////// 7段数码管译码器演示，将number用16进制显示在数码管上面
+/*wire[7:0] number;
 SEG7_LUT segL(.oSEG1(dpy0), .iDIG(number[3:0])); //dpy0是低位数码管
 SEG7_LUT segH(.oSEG1(dpy1), .iDIG(number[7:4])); //dpy1是高位数码管
-
-reg[15:0] led_bits;
-assign leds = led_bits;
-
-always@(posedge clock_btn or posedge reset_btn) begin
-    if(reset_btn)begin //复位按下，设置LED为初始值
-        led_bits <= 16'h1;
-    end
-    else begin //每次按下时钟按钮，LED循环左移
-        led_bits <= {led_bits[14:0],led_bits[15]};
-    end
-end
-
 //直连串口接收发送演示，从直连串口收到的数据再发送出去
 wire [7:0] ext_uart_rx;
 reg  [7:0] ext_uart_buffer, ext_uart_tx;
@@ -130,7 +292,9 @@ wire ext_uart_ready, ext_uart_clear, ext_uart_busy;
 reg ext_uart_start, ext_uart_avai;
     
 assign number = ext_uart_buffer;
+*/
 
+/*
 async_receiver #(.ClkFrequency(50000000),.Baud(9600)) //接收模块，9600无检验位
     ext_uart_r(
         .clk(clk_50M),                       //外部时钟信号
@@ -165,8 +329,8 @@ async_transmitter #(.ClkFrequency(50000000),.Baud(9600)) //发送模块，9600�
         .TxD_busy(ext_uart_busy),       //发送器忙状态指示
         .TxD_start(ext_uart_start),    //开始发送信号
         .TxD_data(ext_uart_tx)        //待发送的数据
-    );
-
+    );*/
+/*
 //图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
 wire [11:0] hdata;
 assign video_red = hdata < 266 ? 3'b111 : 0; //红色竖条
@@ -182,5 +346,10 @@ vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
     .data_enable(video_de)
 );
 /* =========== Demo code end =========== */
+
+
+
+
+
 
 endmodule
