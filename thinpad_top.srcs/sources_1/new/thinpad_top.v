@@ -77,6 +77,29 @@ always@(posedge clk_10M or negedge locked) begin
     else        reset_of_clk10M <= 1'b0;
 end
 
+/*always@(posedge clk_10M or posedge reset_of_clk10M) begin
+    if(reset_of_clk10M)begin
+        // Your Code
+    end
+    else begin
+        // Your Code
+    end
+end*/
+
+//没有进行片选前的我自己的top出来的wire类型
+wire inst_sram_en_my;
+wire [3:0] inst_sram_wen_my;
+wire [31:0] inst_sram_addr_my;
+wire [31:0] inst_sram_wdata_my;
+wire [31:0] inst_sram_rdata_my;
+  
+wire data_sram_en_my;
+wire [3:0] data_sram_wen_my;
+wire [31:0] data_sram_addr_my;
+wire [31:0] data_sram_wdata_my;
+wire [31:0] data_sram_rdata_my;
+wire data_sram_read_en_my;
+/*
 always@(posedge clk_10M or posedge reset_of_clk10M) begin
     if(reset_of_clk10M)begin
         // Your Code
@@ -85,16 +108,151 @@ always@(posedge clk_10M or posedge reset_of_clk10M) begin
         // Your Code
     end
 end
+*/
+reg  [19:0]base_ram_addr_r;
+reg  [3:0]base_ram_be_n_r;
+reg  base_ram_ce_n_r;
+reg  base_ram_oe_n_r;
+reg  base_ram_we_n_r;
+reg  [31:0]base_ram_data_r;
 
+reg  [19:0]ext_ram_addr_r;
+reg  [3:0]ext_ram_be_n_r;
+reg  ext_ram_ce_n_r;
+reg  ext_ram_oe_n_r;
+reg  ext_ram_we_n_r;
+reg  [31:0]ext_ram_data_r;
+//RAM->REG
+reg [31:0]inst_rdata_r;
+reg [31:0]data_rdata_r;
+//reg ext_ram_we_n_r;
+
+reg sel_sram;
+//  reg from_ex;
+
+/*top cpu(
+    .clk_in(clk_20M),
+    .rsten(reset_of_clk10M),
+
+    .inst_sram_en(inst_sram_en_my),
+    .inst_sram_wen(inst_sram_wen_my),
+    .inst_sram_addr(inst_sram_addr_my),
+    .inst_sram_wdata(inst_sram_wdata_my),
+    .inst_sram_rdata(inst_sram_rdata_my),
+  
+    .data_sram_en(data_sram_en_my),
+    .data_sram_wen(data_sram_wen_my),
+    .data_sram_addr(data_sram_addr_my),
+    .data_sram_wdata(data_sram_wdata_my),
+    .data_sram_rdata(data_sram_rdata_my)
+);*///第一次做错的单周期
+
+//进行对应片选和真正在芯片上地址对应
+/*
+//BaseRAM信号
+    inout wire[31:0] base_ram_data,  //BaseRAM数据，低8位与CPLD串口控制器共享
+    output wire[19:0] base_ram_addr, //BaseRAM地址
+    output wire[3:0] base_ram_be_n,  //BaseRAM字节使能，低有效。如果不使用字节使能，请保持为0
+    output wire base_ram_ce_n,       //BaseRAM片选，低有效
+    output wire base_ram_oe_n,       //BaseRAM读使能，低有效
+    output wire base_ram_we_n,       //BaseRAM写使能，低有效
+
+    //ExtRAM信号
+    inout wire[31:0] ext_ram_data,  //ExtRAM数据
+    output wire[19:0] ext_ram_addr, //ExtRAM地址
+    output wire[3:0] ext_ram_be_n,  //ExtRAM字节使能，低有效。如果不使用字节使能，请保持为0
+    output wire ext_ram_ce_n,       //ExtRAM片选，低有效
+    output wire ext_ram_oe_n,       //ExtRAM读使能，低有效
+    output wire ext_ram_we_n,       //ExtRAM写使能，低有效
+   */ 
+wire data_rom_en_my;
+wire inst_rom_en_my;
+wire data_rom_wen_my;
+Caopu cpu(
+    .clk_i(clk_20M),
+    .rst_i(reset_of_clk10M),
+    
+    .inst_rom_data_i(base_ram_data),
+    
+    .inst_rom_en_o(inst_rom_en_my),
+    .inst_rom_addr_o(inst_sram_addr_my),
+
+    .data_rom_en(data_rom_en_my),
+    .data_rom_wen(data_rom_wen_my),
+    .data_rom_addr(data_sram_addr_my),
+    .data_rom_wdata(data_sram_wdata_my),
+    .data_rom_rdata(data_sram_rdata_my),
+    .data_rom_read_en(data_sram_read_en_my)
+);
+
+
+//这个才是真正的;
+assign base_ram_addr = inst_sram_addr_my[21:2];
+assign base_ram_ce_n = ~inst_rom_en_my;
+assign base_ram_be_n = 1'b0;
+
+assign base_ram_oe_n = 1'b0;
+assign base_ram_we_n = 1'b1;
+
+always @(*) begin//快了，用always卡一拍
+    if(reset_of_clk10M)begin
+        ext_ram_ce_n_r <= 1'b1;
+        ext_ram_oe_n_r <= 1'b1;
+        ext_ram_we_n_r <= 1'b1;
+        ext_ram_addr_r <= 20'h0;
+    end
+        ext_ram_ce_n_r <= ~data_rom_en_my;
+        ext_ram_oe_n_r <= ~data_sram_read_en_my;
+        ext_ram_we_n_r <= ~data_rom_wen_my;
+        ext_ram_addr_r <= data_sram_addr_my[21:2];
+    if(data_rom_en_my && data_rom_wen_my && data_sram_addr_my >= 32'h80400000 && data_sram_addr_my <= 32'h807FFFFF)begin
+        ext_ram_data_r <= data_sram_wdata_my;
+    end else begin
+        if(data_rom_en_my && data_sram_read_en_my && data_sram_addr_my >= 32'h80400000 && data_sram_addr_my <= 32'h807FFFFF)begin
+            ext_ram_data_r <= data_sram_rdata_my;
+        end
+    end
+end
+
+assign ext_ram_addr = ext_ram_addr_r;
+
+assign ext_ram_ce_n = ext_ram_ce_n_r;
+assign ext_ram_be_n = 1'b0;
+
+assign ext_ram_we_n = ext_ram_we_n_r;
+assign ext_ram_oe_n = ext_ram_oe_n_r;
+assign ext_ram_data = ext_ram_data_r;
+/*
+reg  [19:0]ext_ram_addr_r;
+reg  [3:0]ext_ram_be_n_r;
+reg  ext_ram_ce_n_r;
+reg  ext_ram_oe_n_r;
+reg  ext_ram_we_n_r;
+reg  [31:0]ext_ram_data_r;
+*/
+
+/*
+assign ext_ram_addr = data_sram_addr_my[21:2];
+
+assign ext_ram_ce_n = ~data_rom_en_my;
+assign ext_ram_be_n = 1'b0;
+
+assign ext_ram_we_n = ~data_rom_wen_my;
+assign ext_ram_oe_n = ~data_sram_read_en_my;
+assign data_sram_rdata_my = data_sram_read_en_my ? ext_ram_data : 32'hZ;
+assign ext_ram_data = data_rom_wen_my ? data_sram_wdata_my : 32'hZ;
+*/
+
+/*
 // 不使用内存、串口时，禁用其使能信号
-assign base_ram_ce_n = 1'b1;
+/*assign base_ram_ce_n = 1'b1;
 assign base_ram_oe_n = 1'b1;
 assign base_ram_we_n = 1'b1;
 
 assign ext_ram_ce_n = 1'b1;
 assign ext_ram_oe_n = 1'b1;
 assign ext_ram_we_n = 1'b1;
-
+*/
 // 数码管连接关系示意图，dpy1同理
 // p=dpy0[0] // ---a---
 // c=dpy0[1] // |     |
@@ -105,7 +263,7 @@ assign ext_ram_we_n = 1'b1;
 // f=dpy0[6] // e     c
 // g=dpy0[7] // |     |
 //           // ---d---  p
-
+/*
 // 7段数码管译码器演示，将number用16进制显示在数码管上面
 wire[7:0] number;
 SEG7_LUT segL(.oSEG1(dpy0), .iDIG(number[3:0])); //dpy0是低位数码管
@@ -182,5 +340,4 @@ vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
     .data_enable(video_de)
 );
 /* =========== Demo code end =========== */
-
 endmodule
