@@ -62,7 +62,7 @@ always @(*) begin
         //mem_ce_o <= 1'b0;
         stallreq_o <= 1'b0;
         lw_flag_o <= 1'b0;
-
+        mem_we_o <= 1'b0;
         case (alu_op_i)
             8'b11110001: begin//LW
                 mem_addr_o <= mem_addr_i;

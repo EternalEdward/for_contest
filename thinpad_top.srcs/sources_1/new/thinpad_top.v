@@ -204,10 +204,10 @@ assign base_ram_we_n = 1'b1;
 
 
 
-assign ext_ram_ce_n = ~data_rom_en_my;
+assign ext_ram_ce_n = 1'b0;
 assign ext_ram_oe_n = ~data_sram_read_en_my;//rean_en
 assign ext_ram_we_n = ~data_rom_wen_my;
-assign ext_ram_addr = (~data_rom_wen_my && ~data_rom_en_my && data_sram_addr_my != 32'h00000000) ? maybe_addr[21:2]: data_sram_addr_my[21:2];
+assign ext_ram_addr = data_sram_addr_my[21:2];
 assign ext_ram_be_n = 1'b0;
 assign ext_ram_data = ~ext_ram_we_n ? data_sram_wdata_my : 32'bz;
 
