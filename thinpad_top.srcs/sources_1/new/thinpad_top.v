@@ -233,7 +233,7 @@ reg  [31:0]ext_ram_data_r;
 */
 
 /*
-assign ext_ram_addr = data_sram_addr_my[21:2];
+assign ext_ram_addr = data_sram_addr_my[21:0];
 
 assign ext_ram_ce_n = ~data_rom_en_my;
 assign ext_ram_be_n = 1'b0;
