@@ -90,7 +90,7 @@ always @(*) begin
                 mem_ce_o <= 1'b1;
                 mem_we_o <= 1'b1;
                 mem_read_en_o <= 1'b0;
-                stallreq_o <= 1'b1;
+                //stallreq_o <= 1'b1;
             end
             default: begin
             end

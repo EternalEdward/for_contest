@@ -2,6 +2,7 @@ module Caopu (
     input clk_i,
     input rst_i,
     
+    input stallq,
     input [31:0]inst_rom_data_i,
     
     output inst_rom_en_o,
@@ -102,6 +103,7 @@ wire [31:0]MEM_new_data_lw_o;
 CTRL CTRL_cpu(
     //.clk(clk_i),
     .rst(rst_i),
+    .stallq(stallq),
     .pasue_from_id(ID_stallreq_o),
     //.pasue_from_id(1'b0),
     .pasue_from_exe(1'b0),

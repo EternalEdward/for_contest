@@ -19,6 +19,7 @@ module EXE (
     output [7:0]alu_op_o,
     output [31:0]mem_addr_o,
     output [31:0]caseB_o
+    //output [31:0]maybe_addr_o;
 
 );
 

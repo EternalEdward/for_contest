@@ -1,5 +1,6 @@
 module CTRL (
     input rst,
+    input stallq,
     input pasue_from_id,
     input pasue_from_exe,
     input pasue_from_mem,
@@ -11,7 +12,7 @@ always @(*) begin
     if(rst)begin
         stall <= 6'b000000;
     end else begin
-        stall <= //pasue_from_mem ?   6'b000111 :
+        stall <= //stallq         ?   6'b001111 :
                  pasue_from_exe ?   6'b001111 :
                  pasue_from_id  ?   6'b000011 :
                                     6'b000000;
