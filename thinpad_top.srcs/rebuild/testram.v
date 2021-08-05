@@ -32,18 +32,10 @@ reg [7:0]  count;
 reg [2:0]  state;
 reg t;
 reg [31:0]olddata;
-always @(*) begin
-    if(rst)begin
-         t <= 1'b1;
-    end else begin
-        if(data_rom_wen)begin
-            t <= 1'b1;
-        end
-    end
-end
 
 always @(posedge clk) begin
     if(rst)begin
+        t <= 1'b1;
         ext_ram_data<=32'd0;
         ext_ram_addr<=20'd0;
         //ext_ram_be_n=4'b0;
