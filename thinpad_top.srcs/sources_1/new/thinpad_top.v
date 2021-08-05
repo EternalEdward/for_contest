@@ -214,8 +214,8 @@ assign ext_ram_ce_n = 1'b0;
 assign ext_ram_oe_n = ~data_sram_read_en_my;//rean_en
 assign ext_ram_we_n = ~vld_out;
 assign ext_ram_addr = data_sram_addr_my[21:2];
-assign ext_ram_be_n = 1'b0;
-assign ext_ram_data = data_sram_wdata_my;
+assign ext_ram_be_n = (|vld_out) ? ~vld_out : 4'b0;
+assign ext_ram_data = data_sram_wdata_my; 
 
 /*
 always @(*) begin//快了，用always卡一拍
