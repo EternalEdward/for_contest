@@ -193,7 +193,13 @@ Caopu cpu(
     .data_rom_read_en(data_sram_read_en_my)
 );
 
-
+reg vld_out;
+always@(posedge clk_10M)begin//打一拍
+    if(reset_of_clk10M)begin
+        vld_out <= 1'b0;
+    end
+        vld_out <= data_rom_wen_my;
+end
 //这个才是真正的;
 assign base_ram_addr = inst_sram_addr_my[21:2];
 assign base_ram_ce_n = ~inst_rom_en_my;
@@ -206,10 +212,10 @@ assign base_ram_we_n = 1'b1;
 
 assign ext_ram_ce_n = 1'b0;
 assign ext_ram_oe_n = ~data_sram_read_en_my;//rean_en
-assign ext_ram_we_n = ~data_rom_wen_my;
+assign ext_ram_we_n = ~vld_out;
 assign ext_ram_addr = data_sram_addr_my[21:2];
 assign ext_ram_be_n = 1'b0;
-assign ext_ram_data = ~ext_ram_we_n ? data_sram_wdata_my : 32'bz;
+assign ext_ram_data = data_sram_wdata_my;
 
 /*
 always @(*) begin//快了，用always卡一拍
