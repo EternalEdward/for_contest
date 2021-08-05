@@ -17,5 +17,4 @@ always @(*) begin
                                     6'b000000;
     end
 end
-    
 endmodule

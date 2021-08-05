@@ -9,7 +9,8 @@ module MEM (
     input [7:0]alu_op_i,
     input [31:0]mem_addr_i,
     input [31:0]caseB_i,
-    input [31:0]rom_data_i,
+
+    input [31:0]rom_data_i,//这里
 
     output reg[31:0]mem_addr_o,
     output reg[31:0]rom_data_o,
@@ -55,7 +56,7 @@ always @(*) begin
         ALU_result_o <= ALU_result_i;
         reg_waddr_o <= reg_waddr_i; 
         reg_wen_o <= reg_wen_i;
-
+        mem_ce_o <= 1'b0;
         //mem_addr_o <= 32'h00000000;
         //rom_data_o <= 32'h00000000;
         //mem_ce_o <= 1'b0;
@@ -73,6 +74,8 @@ always @(*) begin
                 //stallreq_o <= 1'b1;
                 //在这里读使能出问
                 if(mem_addr_i == old_addr_of_SW)begin
+                    //mem_we_o <= 1'b1;
+                    //mem_read_en_o <= 1'b0;
                     new_data_lw_o <= old_data_of_SW;
                     lw_flag_o <= 1'b1;
                 end
@@ -87,7 +90,7 @@ always @(*) begin
                 mem_ce_o <= 1'b1;
                 mem_we_o <= 1'b1;
                 mem_read_en_o <= 1'b0;
-                //stallreq_o <= 1'b1;
+                stallreq_o <= 1'b1;
             end
             default: begin
             end

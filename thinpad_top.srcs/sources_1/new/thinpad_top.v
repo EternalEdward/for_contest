@@ -209,7 +209,7 @@ always @(*) begin//快了，用always卡一拍
         ext_ram_data_r <= data_sram_wdata_my;
     end else begin
         if(data_rom_en_my && data_sram_read_en_my && data_sram_addr_my >= 32'h80400000 && data_sram_addr_my <= 32'h807FFFFF)begin
-            ext_ram_data_r <= data_sram_rdata_my;
+            //ext_ram_data_r <= data_sram_rdata_my;
         end
     end
 end
@@ -221,6 +221,7 @@ assign ext_ram_be_n = 1'b0;
 
 assign ext_ram_we_n = ext_ram_we_n_r;
 assign ext_ram_oe_n = ext_ram_oe_n_r;
+assign data_sram_rdata_my = ext_ram_data;
 assign ext_ram_data = ext_ram_data_r;
 /*
 reg  [19:0]ext_ram_addr_r;

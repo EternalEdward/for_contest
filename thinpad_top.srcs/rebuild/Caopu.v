@@ -10,8 +10,10 @@ module Caopu (
     output data_rom_en,
     output data_rom_wen,
     output [31:0]data_rom_addr,
+
     output [31:0]data_rom_wdata,
-    output [31:0]data_rom_rdata,
+    input  [31:0]data_rom_rdata,//这里
+
     output wire data_rom_read_en
 );
 //
@@ -304,9 +306,11 @@ MEM MEM_cpu(
     .alu_op_i(EXE_MEM_exe_alu_op_o),
     .mem_addr_i(EXE_MEM_exe_to_mem_addr_o),
     .caseB_i(EXE_MEM_exe_caseB_o),
+
     .rom_data_i(data_rom_rdata),//从ROM拿
 
     .mem_addr_o(data_rom_addr),
+
     .rom_data_o(data_rom_wdata),
     .mem_ce_o(data_rom_en),
     .mem_we_o(data_rom_wen),
