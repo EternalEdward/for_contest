@@ -14,7 +14,8 @@ module Caopu (
     output [31:0]data_rom_wdata,
     input  [31:0]data_rom_rdata,//这里
 
-    output wire data_rom_read_en
+    output wire data_rom_read_en,
+    output wire [31:0]maybe_addr_o
 );
 //
 wire [31:0]pc_o;
@@ -270,7 +271,7 @@ EXE EXE_cpu(
     .caseB_o(EXE_caseB_o)
 );
 
-
+assign maybe_addr_o =(EXE_alu_op_o == 8'b11110010) ? EXE_mem_addr_o : 32'h00000000;
 
 EXE_MEM EXE_MEM_cpu(
     .clk(clk_i),

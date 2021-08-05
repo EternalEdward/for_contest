@@ -87,6 +87,7 @@ end
 end*/
 
 //没有进行片选前的我自己的top出来的wire类型
+wire [31:0]maybe_addr;
 wire inst_sram_en_my;
 wire [3:0] inst_sram_wen_my;
 wire [31:0] inst_sram_addr_my;
@@ -169,14 +170,21 @@ wire data_rom_en_my;
 wire inst_rom_en_my;
 wire data_rom_wen_my;
 Caopu cpu(
-    .clk_i(clk_20M),
+    .clk_i(clk_10M),
     .rst_i(reset_of_clk10M),
-    
+    .maybe_addr_o(maybe_addr),
     .inst_rom_data_i(base_ram_data),
     
     .inst_rom_en_o(inst_rom_en_my),
     .inst_rom_addr_o(inst_sram_addr_my),
 
+    /*.data_rom_en(data_rom_en_my),
+    .data_rom_wen(data_rom_wen_my),
+    .data_rom_addr(data_sram_addr_my),
+    .data_rom_wdata(data_sram_wdata_my),
+    .data_rom_rdata(data_sram_rdata_my),
+    .data_rom_read_en(data_sram_read_en_my)
+    */
     .data_rom_en(data_rom_en_my),
     .data_rom_wen(data_rom_wen_my),
     .data_rom_addr(data_sram_addr_my),
@@ -194,6 +202,16 @@ assign base_ram_be_n = 1'b0;
 assign base_ram_oe_n = 1'b0;
 assign base_ram_we_n = 1'b1;
 
+
+
+assign ext_ram_ce_n = ~data_rom_en_my;
+assign ext_ram_oe_n = ~data_sram_read_en_my;//rean_en
+assign ext_ram_we_n = ~data_rom_wen_my;
+assign ext_ram_addr = (~data_rom_wen_my && ~data_rom_en_my && data_sram_addr_my != 32'h00000000) ? maybe_addr[21:2]: data_sram_addr_my[21:2];
+assign ext_ram_be_n = 1'b0;
+assign ext_ram_data = ~ext_ram_we_n ? data_sram_wdata_my : 32'bz;
+
+/*
 always @(*) begin//快了，用always卡一拍
     if(reset_of_clk10M)begin
         ext_ram_ce_n_r <= 1'b1;
@@ -223,6 +241,10 @@ assign ext_ram_we_n = ext_ram_we_n_r;
 assign ext_ram_oe_n = ext_ram_oe_n_r;
 assign data_sram_rdata_my = ext_ram_data;
 assign ext_ram_data = ext_ram_data_r;
+
+*/
+
+
 /*
 reg  [19:0]ext_ram_addr_r;
 reg  [3:0]ext_ram_be_n_r;
