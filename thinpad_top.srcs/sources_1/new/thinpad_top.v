@@ -190,7 +190,7 @@ Caopu cpu(
     .data_rom_wen(data_rom_wen_my),
     .data_rom_addr(data_sram_addr_my),
     .data_rom_wdata(data_sram_wdata_my),
-    .data_rom_rdata(data_sram_rdata_my),
+    .data_rom_rdata(ext_ram_data),
     .data_rom_read_en(data_sram_read_en_my)
 );
 
@@ -204,7 +204,7 @@ assign base_ram_be_n = 1'b0;
 assign base_ram_oe_n = 1'b0;
 assign base_ram_we_n = 1'b1;
 
-
+assign ext_ram_be_n = 1'b0;
 /*
 assign ext_ram_ce_n = ~data_rom_en_my;
 assign ext_ram_oe_n = ~data_sram_read_en_my;//rean_en
@@ -223,8 +223,8 @@ end
 */
 
  MEMtest testRam (
-     .stall(stallq),
-    //.data_rom_en(data_rom_en_my),
+    .stall(stallq),
+    .data_rom_en(data_rom_en_my),
     .data_rom_wen(data_rom_wen_my),
     .data_rom_addr(data_sram_addr_my),
     .data_rom_wdata(data_sram_wdata_my),

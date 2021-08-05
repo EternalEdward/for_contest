@@ -4,7 +4,7 @@ module MEMtest (
     input rst,
     input clk,
 
-    //input data_rom_en,
+    input data_rom_en,
     input data_rom_wen,
     input [31:0]data_rom_addr,
     input [31:0]data_rom_wdata,
@@ -22,7 +22,7 @@ module MEMtest (
 
 
     reg[31:0] ext_ram_data;  //ExtRAM数据
-    reg[19:0] ext_ram_addr; //ExtRAM地址
+    reg[31:0] ext_ram_addr; //ExtRAM地址
     //reg[3:0] ext_ram_be_n; //ExtRAM字节使能，低有效。如果不使用字节使能，请保持为0
     reg ext_ram_ce_n; //ExtRAM片选，低有效
     reg ext_ram_oe_n; //ExtRAM读使能，低有效
@@ -47,7 +47,7 @@ always @(posedge clk) begin
         ext_ram_data<=32'd0;
         ext_ram_addr<=20'd0;
         //ext_ram_be_n=4'b0;
-        ext_ram_ce_n<=1'b1;
+        ext_ram_ce_n<=1'b0;
         ext_ram_oe_n<=1'b1;
         ext_ram_we_n<=1'b1;
         count<=8'd0;
@@ -61,7 +61,8 @@ always @(posedge clk) begin
             olddata = data_rom_wdata;
             case(state)
                 3'b000:begin
-                    ext_ram_ce_n<=1'b1;
+                    ext_ram_addr <=data_rom_addr;
+                    //ext_ram_ce_n<= ~data_rom_en;
                     ext_ram_we_n<=1'b1;
                     state <= state + 3'b001;
                 end
@@ -71,11 +72,11 @@ always @(posedge clk) begin
                     state <= state + 3'b001;
                 end
                 3'b010:begin
-                    ext_ram_data <= olddata;
+                    ext_ram_data <= data_rom_wdata;
                     state <= state + 3'b001;
                 end
                 3'b011:begin
-                    ext_ram_ce_n<=1'b1;
+                    //ext_ram_ce_n<=~data_rom_en;
                     ext_ram_we_n<=1'b1;
                     state <= state + 3'b001;
                 end
@@ -90,7 +91,7 @@ always @(posedge clk) begin
 end
 
 assign     wext_ram_data = ext_ram_data;  //ExtRAM数据
-assign     wext_ram_addr = ext_ram_addr;
+assign     wext_ram_addr = ext_ram_addr[21:2];
 //assign     wext_ram_be_n =ext_ram_be_n;
 assign     wext_ram_ce_n=ext_ram_ce_n;
 assign     wext_ram_oe_n=ext_ram_oe_n;
