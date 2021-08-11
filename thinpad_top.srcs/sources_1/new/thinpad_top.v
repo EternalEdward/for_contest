@@ -171,7 +171,7 @@ wire data_rom_en_my;
 wire inst_rom_en_my;
 wire data_rom_wen_my;
 Caopu cpu(
-    .clk_i(clk_10M),
+    .clk_i(clk_20M),
     .rst_i(reset_of_clk10M),
     .maybe_addr_o(maybe_addr),
     .inst_rom_data_i(base_ram_data),

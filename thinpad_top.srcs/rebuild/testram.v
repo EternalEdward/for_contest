@@ -28,32 +28,29 @@ module MEMtest (
     reg ext_ram_oe_n; //ExtRAM读使能，低有效
     reg ext_ram_we_n; //ExtRAM写使能，低有效
 
-reg [7:0]  count;
 reg [2:0]  state;
-reg t;
+//reg t;
 reg [31:0]olddata;
+reg [31:0]oldaddr;
 
 always @(posedge clk) begin
     if(rst)begin
-        t <= 1'b1;
         ext_ram_data<=32'd0;
         ext_ram_addr<=20'd0;
         //ext_ram_be_n=4'b0;
         ext_ram_ce_n<=1'b0;
         ext_ram_oe_n<=1'b1;
         ext_ram_we_n<=1'b1;
-        count<=8'd0;
+        olddata <= 32'h00000000;
+        oldaddr <= 20'h00000;
         state<=3'b000;
         stall <=1'b0;
     end else begin
         stall <=1'b0;
-        if(t) begin
-            //stall <= 1'b1;
-            count <= count +1'b1;
-            olddata = data_rom_wdata;
+        if(oldaddr != data_rom_addr && olddata != data_rom_wdata) begin
             case(state)
                 3'b000:begin
-                    ext_ram_addr <=data_rom_addr;
+                    ext_ram_addr <=oldaddr;
                     //ext_ram_ce_n<= ~data_rom_en;
                     ext_ram_we_n<=1'b1;
                     state <= state + 3'b001;
@@ -64,7 +61,7 @@ always @(posedge clk) begin
                     state <= state + 3'b001;
                 end
                 3'b010:begin
-                    ext_ram_data <= data_rom_wdata;
+                    ext_ram_data <= olddata;
                     state <= state + 3'b001;
                 end
                 3'b011:begin
@@ -73,8 +70,9 @@ always @(posedge clk) begin
                     state <= state + 3'b001;
                 end
                 3'b100:begin
-                    ext_ram_addr <=data_rom_addr;
-                    t <= 1'b1;
+                    oldaddr <= data_rom_addr;
+                    olddata <= data_rom_wdata;
+                    ext_ram_addr <=oldaddr;
                     state <= 3'b000;
                 end
         endcase
