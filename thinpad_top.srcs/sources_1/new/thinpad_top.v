@@ -25,6 +25,7 @@ module thinpad_top(
     inout wire[31:0] ext_ram_data,  //ExtRAM数据
     output wire[19:0] ext_ram_addr, //ExtRAM地址
     output wire[3:0] ext_ram_be_n,  //ExtRAM字节使能，低有效。如果不使用字节使能，请保持为0
+    //00 00 00 00 一共四位个所以是[3:0]的4位
     output wire ext_ram_ce_n,       //ExtRAM片选，低有效
     output wire ext_ram_oe_n,       //ExtRAM读使能，低有效
     output wire ext_ram_we_n,       //ExtRAM写使能，低有效

@@ -1,5 +1,3 @@
-    
-    
 module MEMtest (
     input rst,
     input clk,
@@ -38,16 +36,48 @@ always @(posedge clk) begin
         ext_ram_data<=32'd0;
         ext_ram_addr<=20'd0;
         //ext_ram_be_n=4'b0;
-        ext_ram_ce_n<=1'b0;
+        ext_ram_ce_n<=1'b1;
         ext_ram_oe_n<=1'b1;
         ext_ram_we_n<=1'b1;
-        olddata <= 32'h00000000;
+        olddata <= 32'h000000001;
         oldaddr <= 20'h00000;
         state<=3'b000;
         stall <=1'b0;
     end else begin
-        stall <=1'b0;
         if(oldaddr != data_rom_addr && olddata != data_rom_wdata) begin
+            case(state)
+                3'b000:begin
+                    ext_ram_addr <=oldaddr;
+                    ext_ram_ce_n<= ~data_rom_en;
+                    ext_ram_we_n<=1'b1;
+                    state <= state + 3'b001;
+                end
+                3'b001:begin
+                    ext_ram_we_n<=1'b0;
+                    ext_ram_ce_n<=1'b0;
+                    state <= state + 3'b001;
+                end
+                3'b010:begin
+                    ext_ram_data <= olddata;
+                    state <= state + 3'b001;
+                end
+                3'b011:begin
+                    ext_ram_ce_n<=~data_rom_en;
+                    ext_ram_we_n<=1'b1;
+                    state <= state + 3'b001;
+                end
+                3'b100:begin
+                    oldaddr <= data_rom_addr;
+                    olddata <= data_rom_wdata;
+                    //ext_ram_addr <=oldaddr;
+                    state <= 3'b000;
+                end
+            endcase
+        end
+        //
+        /*
+        //测试SRAM用
+        //该方法测试成功
             case(state)
                 3'b000:begin
                     ext_ram_addr <=oldaddr;
@@ -66,17 +96,25 @@ always @(posedge clk) begin
                 end
                 3'b011:begin
                     //ext_ram_ce_n<=~data_rom_en;
+                    ext_ram_ce_n<=1'b1;
                     ext_ram_we_n<=1'b1;
                     state <= state + 3'b001;
                 end
                 3'b100:begin
-                    oldaddr <= data_rom_addr;
-                    olddata <= data_rom_wdata;
-                    ext_ram_addr <=oldaddr;
+                    //oldaddr <= data_rom_addr;
+                    oldaddr <= oldaddr + 4'h4;
+                    olddata <= olddata + 1'b1;
+                    //olddata <= data_rom_wdata;
+                    ext_ram_addr <= oldaddr;
                     state <= 3'b000;
                 end
-        endcase
-    end
+            endcase
+            if(ext_ram_addr >= 4'hffff)begin
+                ext_ram_addr <= 4'hfff;
+                olddata <= olddata;
+            end
+        */
+        //
     end
 end
 
