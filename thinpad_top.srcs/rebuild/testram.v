@@ -27,9 +27,10 @@ module MEMtest (
     reg ext_ram_we_n; //ExtRAM写使能，低有效
 
 reg [2:0]  state;
-//reg t;
 reg [31:0]olddata;
 reg [31:0]oldaddr;
+reg [31:0]oldolddata;
+
 
 always @(posedge clk) begin
     if(rst)begin
@@ -39,45 +40,13 @@ always @(posedge clk) begin
         ext_ram_ce_n<=1'b1;
         ext_ram_oe_n<=1'b1;
         ext_ram_we_n<=1'b1;
-        olddata <= 32'h000000001;
-        oldaddr <= 20'h00000;
+        olddata <= 32'h000000002;
+        oldaddr <= 32'h00000;
         state<=3'b000;
         stall <=1'b0;
+        oldolddata <= 000000001;
     end else begin
-        if(oldaddr != data_rom_addr && olddata != data_rom_wdata) begin
-            case(state)
-                3'b000:begin
-                    ext_ram_addr <=oldaddr;
-                    ext_ram_ce_n<= ~data_rom_en;
-                    ext_ram_we_n<=1'b1;
-                    state <= state + 3'b001;
-                end
-                3'b001:begin
-                    ext_ram_we_n<=1'b0;
-                    ext_ram_ce_n<=1'b0;
-                    state <= state + 3'b001;
-                end
-                3'b010:begin
-                    ext_ram_data <= olddata;
-                    state <= state + 3'b001;
-                end
-                3'b011:begin
-                    ext_ram_ce_n<=~data_rom_en;
-                    ext_ram_we_n<=1'b1;
-                    state <= state + 3'b001;
-                end
-                3'b100:begin
-                    oldaddr <= data_rom_addr;
-                    olddata <= data_rom_wdata;
-                    //ext_ram_addr <=oldaddr;
-                    state <= 3'b000;
-                end
-            endcase
-        end
-        //
-        /*
-        //测试SRAM用
-        //该方法测试成功
+        if(oldaddr != data_rom_addr || olddata != data_rom_wdata) begin
             case(state)
                 3'b000:begin
                     ext_ram_addr <=oldaddr;
@@ -96,25 +65,25 @@ always @(posedge clk) begin
                 end
                 3'b011:begin
                     //ext_ram_ce_n<=~data_rom_en;
-                    ext_ram_ce_n<=1'b1;
+                    ext_ram_ce_n <= 1'b1;
                     ext_ram_we_n<=1'b1;
                     state <= state + 3'b001;
                 end
                 3'b100:begin
                     //oldaddr <= data_rom_addr;
                     oldaddr <= oldaddr + 4'h4;
-                    olddata <= olddata + 1'b1;
                     //olddata <= data_rom_wdata;
-                    ext_ram_addr <= oldaddr;
+                    oldolddata <= olddata;
+                    olddata <= oldolddata + olddata;
+                    //olddata <= 32'h00000006;
+                    ext_ram_addr <=oldaddr;
                     state <= 3'b000;
                 end
             endcase
-            if(ext_ram_addr >= 4'hffff)begin
-                ext_ram_addr <= 4'hfff;
-                olddata <= olddata;
+            if(ext_ram_addr >= 24'h3fffff)begin
+                ext_ram_addr <= 24'h3fffff;
             end
-        */
-        //
+        end
     end
 end
 
@@ -127,5 +96,3 @@ assign     wext_ram_we_n=ext_ram_we_n;
 
     
 endmodule
-
-    
