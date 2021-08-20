@@ -70,11 +70,11 @@ always @(posedge clk) begin
                     state <= state + 3'b001;
                 end
                 3'b100:begin
-                    //oldaddr <= data_rom_addr;
-                    oldaddr <= oldaddr + 4'h4;
-                    //olddata <= data_rom_wdata;
-                    oldolddata <= olddata;
-                    olddata <= oldolddata + olddata;
+                    oldaddr <= data_rom_addr;
+                    //oldaddr <= oldaddr + 4'h4;
+                    olddata <= data_rom_wdata;
+                    //oldolddata <= olddata;
+                    //olddata <= oldolddata + olddata;
                     //olddata <= 32'h00000006;
                     ext_ram_addr <=oldaddr;
                     state <= 3'b000;
